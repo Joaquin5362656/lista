@@ -1,12 +1,26 @@
 package lista
 
 type Lista[T any] interface {
+
+	// EstaVacia devuelve verdadero si la lista no tiene elementos, false en caso contrario.
 	EstaVacia() bool
+
+	// InsertarPrimero agrega un elemento al final de la lista
 	InsertarPrimero(T)
+
+	// InsertarUltimo agrega un elemento al final de la lista
 	InsertarUltimo(T)
+
+	// BorrarPrimero borra y retorna el primer elemento de la lista. Tira panic en caso de que la lista este vacia
 	BorrarPrimero() T
+
+	// VerPrimero retorna el primer elemento de la lista. Tira panic en caso de que la lista este vacia
 	VerPrimero() T
+
+	// VerUltimo retorna el ultimo elemento de la lista. Tira panic en caso de que la lista este vacia
 	VerUltimo() T
+
+	// Largo retorna el nro de elementos en la lista.
 	Largo() int
 
 	// Iterar aplica la funcion pasada por parametro a todos los elementos de la lista o hasta
