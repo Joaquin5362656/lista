@@ -8,6 +8,10 @@ type Lista[T any] interface {
 	VerPrimero() T
 	VerUltimo() T
 	Largo() int
+
+	// Iterar aplica la funcion pasada por parametro a todos los elementos de la lista o hasta
+	// que al aplicarle la funcion a algun elemento esta devuelva false, en ese caso se deja de
+	// iterar los elementos de la lista
 	Iterar(visitar func(T) bool)
 
 	// Iterador crea el iterador que permite recorrer los elementos de la lista, usando
