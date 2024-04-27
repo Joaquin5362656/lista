@@ -102,6 +102,10 @@ func (lista *listaEnlazada[T]) Largo() int {
 	return lista.largo
 }
 
+func (lista *listaEnlazada[T]) Iterar(visitar func(T) bool) {
+
+}
+
 func (lista *listaEnlazada[T]) Iterador() IteradorLista[T] {
 	return &iteradorLista[T]{lista, lista.primero, nil}
 }
@@ -164,7 +168,7 @@ func (iterador *iteradorLista[T]) Borrar() T {
 
 	elementoABorrar := iterador.actual.dato
 
-	esFinalLista := iterador.actual == nil
+	esFinalLista := iterador.actual.siguiente == nil
 	esInicioLista := iterador.anterior == nil
 
 	iterador.actual = iterador.actual.siguiente
