@@ -102,6 +102,11 @@ func (lista *listaEnlazada[T]) Largo() int {
 	return lista.largo
 }
 
+func (lista *listaEnlazada[T]) Iterar(visitar func(T) (seguirIterando bool)) {
+
+	lista.primero.iterarElemento(visitar)
+}
+
 func (actual *nodoLista[T]) iterarElemento(visitar func(T) bool) {
 
 	if actual == nil {
@@ -115,11 +120,6 @@ func (actual *nodoLista[T]) iterarElemento(visitar func(T) bool) {
 	} else {
 		return
 	}
-}
-
-func (lista *listaEnlazada[T]) Iterar(visitar func(T) (seguirIterando bool)) {
-
-	lista.primero.iterarElemento(visitar)
 }
 
 func (lista *listaEnlazada[T]) Iterador() IteradorLista[T] {
