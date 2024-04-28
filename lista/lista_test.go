@@ -15,6 +15,69 @@ func TestListaVacia(t *testing.T) {
 	require.True(t, listaInt.EstaVacia(), "Una lista recien creada esta vacia")
 }
 
+func TestAgregarBorrarElemento(t *testing.T) {
+	lista := TDALista.CrearListaEnlazada[int]()
+	lista.InsertarPrimero(1)
+	lista.InsertarPrimero(2)
+	require.Equal(t, 2, lista.BorrarPrimero(), "Se espera que el primer elemento insertado sea el ultimo en ser borrado")
+	require.Equal(t, 1, lista.BorrarPrimero(), "Se espera que el segundo elemento insertado sea el primero en ser borrado")
+	require.True(t, lista.EstaVacia(), "La lista debera estar vacia despuees de desapilar todos los elementos")
+}
+
+func TestPruebaVolumen(t *testing.T) {
+	lista := TDALista.CrearListaEnlazada[int]()
+	cantidadElementos := 10000
+	for i := 1; i <= cantidadElementos; i++ {
+		lista.InsertarPrimero(i)
+	}
+
+	for i := cantidadElementos; i > 0; i-- {
+		require.Equal(t, i, lista.VerPrimero(), "El tope de la lista debería ser el elemento correcto en cada iteracion")
+		require.Equal(t, i, lista.BorrarPrimero(), "Se espera que el elemento borrado sea el correcto")
+	}
+	require.True(t, lista.EstaVacia(), "La lista deberia estar vacia despues de borrar todos los elementos")
+}
+
+func TestAccionesInvalidasEnListaVacia(t *testing.T) {
+	lista := TDALista.CrearListaEnlazada[int]()
+	require.True(t, lista.EstaVacia(), "La lista recin creada deberia estar vacia")
+
+	require.Panics(t, func() { lista.BorrarPrimero() }, "Debe producirse un panic al intentar borrar un elemento de una lista vacia")
+	require.Panics(t, func() { lista.VerPrimero() }, "Debe producirse un panic al intentar ver el primer elemento de una lista vacia")
+}
+
+func TestEstaVaciaEnListaRecienCreada(t *testing.T) {
+	lista := TDALista.CrearListaEnlazada[int]()
+	require.True(t, lista.EstaVacia(), "La lista recien creada deberia estar vacia")
+
+	lista.InsertarPrimero(1)
+	lista.InsertarPrimero(2)
+	require.False(t, lista.EstaVacia(), "La lista a la que se insertaron elementos no deberia estar vacia")
+}
+
+func TestAgregarDiferentesTiposDeDatos(t *testing.T) {
+	listaInt := TDALista.CrearListaEnlazada[int]()
+	listaInt.InsertarPrimero(1)
+	listaInt.InsertarPrimero(2)
+	require.Equal(t, 2, listaInt.BorrarPrimero())
+	require.Equal(t, 1, listaInt.BorrarPrimero())
+	require.True(t, listaInt.EstaVacia())
+
+	listaString := TDALista.CrearListaEnlazada[string]()
+	listaString.InsertarPrimero("Hola")
+	listaString.InsertarPrimero("MUNDO")
+	require.Equal(t, "MUNDO", listaString.BorrarPrimero())
+	require.False(t, listaString.EstaVacia())
+	require.Equal(t, "Hola", listaString.BorrarPrimero())
+	require.True(t, listaString.EstaVacia())
+
+	listaFloat := TDALista.CrearListaEnlazada[float64]()
+	listaFloat.InsertarPrimero(3.14)
+	listaFloat.InsertarPrimero(2.71)
+	require.NotEqual(t, 3.14, listaFloat.BorrarPrimero())
+	require.Equal(t, 3.14, listaFloat.BorrarPrimero())
+}
+
 func TestIteradorInternoTodosLosElementos(t *testing.T) {
 
 	var (
