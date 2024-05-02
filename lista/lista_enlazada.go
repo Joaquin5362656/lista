@@ -67,7 +67,7 @@ func (lista *listaEnlazada[T]) BorrarPrimero() T {
 	lista.primero = lista.primero.siguiente
 	lista.largo--
 
-	if lista.largo == 0 {
+	if lista.EstaVacia() {
 		lista.ultimo = nil
 	}
 
