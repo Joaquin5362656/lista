@@ -56,7 +56,7 @@ func (h *hashAbierto[K comparable, V any]) Guardar(clave K, dato V) {
 }
 
 func (h *hashAbierto[K comparable, V any]) Pertenece(clave K) bool {
-	indice := int(HashBernstein(string(convertirABytes(&clave)))) % h.tam
+	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 
 	var encontrado bool
@@ -71,7 +71,7 @@ func (h *hashAbierto[K comparable, V any]) Pertenece(clave K) bool {
 }
 
 func (h *hashAbierto[K comparable, V any]) Obtener(clave K) V {
-	indice := int(HashBernstein(string(convertirABytes(&clave)))) % h.tam
+	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 	var dato V
 	var encontrado bool
@@ -93,7 +93,7 @@ func (h *hashAbierto[K comparable, V any]) Obtener(clave K) V {
 }
 
 func (h *hashAbierto[K comparable, V any]) Borrar(clave K) V {
-	indice := int(HashBernstein(string(convertirABytes(&clave)))) % h.tam
+	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 	var dato V
 	var encontrado bool
