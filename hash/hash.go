@@ -16,6 +16,12 @@ type hashAbierto[K comparable, V any] struct {
 	cantidad int
 }
 
+func CrearHash[K comparable, V any]() Diccionario[K, V] {
+	tam := 17
+	tabla := make([]TDALista.Lista[parClaveValor[K, V]], tam)
+	return &hashAbierto[K, V]{tabla: tabla, tam: tam}
+}
+
 func convertirABytes[K comparable](clave K) []byte {
 	return []byte(fmt.Sprintf("%v", clave))
 }
@@ -27,12 +33,6 @@ func HashBernstein(cadena string) uint32 {
 		hash = (hash << 5) + hash + uint32(c)
 	}
 	return hash
-}
-
-func CrearHash[K comparable, V any]() Diccionario[K, V] {
-	tam := 17
-	tabla := make([]TDALista.Lista[parClaveValor[K, V]], tam)
-	return &hashAbierto[K, V]{tabla: tabla, tam: tam}
 }
 
 func (h *hashAbierto[K comparable, V any]) Guardar(clave K, dato V) {
@@ -57,5 +57,5 @@ func (h *hashAbierto[K comparable, V any]) Borrar(clave K) V {
 }
 
 func (h *hashAbierto[K comparable, V any]) Cantidad() int {
-	return 0
+	return h.cantidad
 }
