@@ -19,7 +19,7 @@ type hashAbierto[K comparable, V any] struct {
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	tam := 17
 	tabla := make([]TDALista.Lista[parClaveValor[K, V]], tam)
-	return &hashAbierto[K, V]{tabla: tabla, tam: tam}
+	return &hashAbierto[K, V]{tabla: tabla, tam: tam} // este error desaparece cuando se implemente el iterador
 }
 
 func convertirABytes[K comparable](clave K) []byte {
@@ -35,8 +35,9 @@ func HashBernstein(cadena string) uint32 {
 	return hash
 }
 
-func (h *hashAbierto[K comparable, V any]) Guardar(clave K, dato V) {
-	indice := int(HashBernstein(convertirABytes(clave))) % h.tam
+func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
+	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
+
 	lista := h.tabla[indice]
 	var encontrado bool
 
@@ -55,13 +56,13 @@ func (h *hashAbierto[K comparable, V any]) Guardar(clave K, dato V) {
 	}
 }
 
-func (h *hashAbierto[K comparable, V any]) Pertenece(clave K) bool {
+func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 
 	var encontrado bool
 	lista.Iterar(func(par parClaveValor[K, V]) bool {
-		if par.clave == clave{
+		if par.clave == clave {
 			encontrado = true
 			return false
 		}
@@ -70,7 +71,7 @@ func (h *hashAbierto[K comparable, V any]) Pertenece(clave K) bool {
 	return encontrado
 }
 
-func (h *hashAbierto[K comparable, V any]) Obtener(clave K) V {
+func (h *hashAbierto[K, V]) Obtener(clave K) V {
 	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 	var dato V
@@ -85,38 +86,40 @@ func (h *hashAbierto[K comparable, V any]) Obtener(clave K) V {
 		return true
 	})
 
-	if !encontrado{
+	if !encontrado {
 		panic("La clave no pertenece al diccionario")
 	}
 
 	return dato
 }
 
-func (h *hashAbierto[K comparable, V any]) Borrar(clave K) V {
+func (h *hashAbierto[K, V]) Borrar(clave K) V {
 	indice := int(HashBernstein(string(convertirABytes(clave)))) % h.tam
 	lista := h.tabla[indice]
 	var dato V
 	var encontrado bool
 
-	lista.Iterar(func(par parClaveValor[K, V]) bool {
-		if par.clave == clave {
-			dato = par.dato
-			lista.Borrar()
+	iterador := lista.Iterador()
+	for iterador.HaySiguiente() {
+		elemento := iterador.VerActual()
+		if elemento.clave == clave {
+			dato = elemento.dato
+			iterador.Borrar()
 			encontrado = true
-			return false
+			break
 		}
-		return true
-	})
+		iterador.Siguiente()
+	}
 
-	if !encontrado{
+	if !encontrado {
 		panic("La clave no pertenece al diccionario")
 	}
 
 	h.cantidad--
-	
+
 	return dato
 }
 
-func (h *hashAbierto[K comparable, V any]) Cantidad() int {
+func (h *hashAbierto[K, V]) Cantidad() int {
 	return h.cantidad
 }
