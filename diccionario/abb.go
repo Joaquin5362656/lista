@@ -1,4 +1,4 @@
-package diccionario
+package 
 
 type nodoAbb[K comparable, V any] struct {
 	izquierdo *nodoAbb[K, V]
