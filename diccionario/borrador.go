@@ -1,4 +1,4 @@
-package diccionario
+//package diccionario
 
 //import ("strings")
 
