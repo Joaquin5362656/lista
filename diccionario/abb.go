@@ -124,6 +124,38 @@ func (nodoArbol *nodoAbb[K, V]) iterarRec(funcion func(clave K, dato V) bool) bo
 	}
 }
 
+func (arbol *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+
+	arbol.raiz.iterarRangoRec(desde, hasta, visitar, arbol.funcCmp)
+}
+
+func (nodoArbol *nodoAbb[K, V]) iterarRangoRec(desde *K, hasta *K, visitar func(clave K, dato V) bool, comparar func(K, K) int) (seguirIterando bool) {
+
+	if nodoArbol == nil {
+		return true
+	}
+
+	mayorRangoInferior := false
+	seguirIterando = true
+
+	if comparar(*desde, nodoArbol.nodoRaiz.clave) <= 0 {
+		seguirIterando = nodoArbol.izquierdo.iterarRangoRec(desde, hasta, visitar, comparar)
+		mayorRangoInferior = true
+	}
+	if comparar(*hasta, nodoArbol.nodoRaiz.clave) >= 0 {
+		if mayorRangoInferior {
+			seguirIterando = visitar(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato)
+		}
+
+		if seguirIterando {
+			seguirIterando = nodoArbol.derecho.iterarRangoRec(desde, hasta, visitar, comparar)
+		}
+	}
+
+	return seguirIterando
+
+}
+
 func buscarRamaSucesorInmediato[K comparable, V any](raiz *nodoAbb[K, V]) **nodoAbb[K, V] {
 
 	if raiz.izquierdo == nil {
@@ -177,17 +209,25 @@ func (rama *nodoAbb[K, V]) buscarRama(clave K, comparar func(K, K) int) **nodoAb
 
 type iteradorAbb[K comparable, V any] struct {
 	nodosEnOrden TDAPila.Pila[*nodoAbb[K, V]]
+	desde        *K
+	hasta        *K
+	comparar     func(K, K) int
 }
 
 func (arbol *abb[K, V]) Iterador() IterDiccionario[K, V] {
-	return crearIteradorAbb(arbol.raiz)
+	return crearIteradorAbb(arbol.raiz, nil, nil, arbol.funcCmp)
 }
 
-func crearIteradorAbb[K comparable, V any](raiz *nodoAbb[K, V]) *iteradorAbb[K, V] {
+func (arbol *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+	return crearIteradorAbb(arbol.raiz, desde, hasta, arbol.funcCmp)
+}
+
+func crearIteradorAbb[K comparable, V any](raiz *nodoAbb[K, V], desde *K, hasta *K, comparar func(K, K) int) *iteradorAbb[K, V] {
 
 	nodosAIterar := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
-	apilarNodosMenores(nodosAIterar, raiz)
-	return &iteradorAbb[K, V]{nodosEnOrden: nodosAIterar}
+	iterAbb := iteradorAbb[K, V]{nodosAIterar, desde, hasta, comparar}
+	iterAbb.apilarNodosMenores(raiz)
+	return &iterAbb
 }
 
 func (iterAbb *iteradorAbb[K, V]) HaySiguiente() bool {
@@ -197,7 +237,8 @@ func (iterAbb *iteradorAbb[K, V]) HaySiguiente() bool {
 func (iterAbb *iteradorAbb[K, V]) Siguiente() {
 
 	nodoIterado := iterAbb.nodosEnOrden.Desapilar()
-	apilarNodosMenores(iterAbb.nodosEnOrden, nodoIterado.derecho)
+	iterAbb.apilarNodosMenores(nodoIterado.derecho)
+
 }
 
 func (iterAbb *iteradorAbb[K, V]) VerActual() (K, V) {
@@ -206,11 +247,26 @@ func (iterAbb *iteradorAbb[K, V]) VerActual() (K, V) {
 	return actual.nodoRaiz.clave, actual.nodoRaiz.dato
 }
 
-func apilarNodosMenores[K comparable, V any](pila TDAPila.Pila[*nodoAbb[K, V]], raiz *nodoAbb[K, V]) {
+func (iterAbb *iteradorAbb[K, V]) apilarNodosMenores(raiz *nodoAbb[K, V]) {
+
+	if raiz == nil {
+		return
+	}
+
+	if iterAbb.hasta == nil || iterAbb.comparar(*iterAbb.hasta, raiz.nodoRaiz.clave) >= 0 {
+		iterAbb.nodosEnOrden.Apilar(raiz)
+	}
+
+	raiz = raiz.izquierdo
 
 	for raiz != nil {
-		pila.Apilar(raiz)
-		raiz = raiz.izquierdo
+		if iterAbb.desde == nil || iterAbb.comparar(*iterAbb.desde, raiz.nodoRaiz.clave) <= 0 {
+			iterAbb.nodosEnOrden.Apilar(raiz)
+			raiz = raiz.izquierdo
+		} else {
+			iterAbb.apilarNodosMenores(raiz.derecho)
+			raiz = nil
+		}
 	}
 
 }
