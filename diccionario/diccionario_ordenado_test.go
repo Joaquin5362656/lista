@@ -216,3 +216,394 @@ func TestGuardarYBorrarRepetidasVeces(t *testing.T) {
 		require.False(t, dic.Pertenece(i))
 	}
 }
+
+func buscar(clave string, claves []string) int {
+	for i, c := range claves {
+		if c == clave {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestIteradorInternoClaves(t *testing.T) {
+	t.Log("Valida que todas las claves sean recorridas (y una única vez) con el iterador interno")
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	claves := []string{clave1, clave2, clave3}
+	dic := TDADiccionarioOrdenado.CrearABB[string, *int](funcion_cmp)
+	dic.Guardar(claves[0], nil)
+	dic.Guardar(claves[1], nil)
+	dic.Guardar(claves[2], nil)
+
+	cs := []string{"", "", ""}
+	cantidad := 0
+	cantPtr := &cantidad
+
+	dic.Iterar(func(clave string, dato *int) bool {
+		cs[cantidad] = clave
+		*cantPtr = *cantPtr + 1
+		return true
+	})
+
+	require.EqualValues(t, 3, cantidad)
+	require.NotEqualValues(t, -1, buscar(cs[0], claves))
+	require.NotEqualValues(t, -1, buscar(cs[1], claves))
+	require.NotEqualValues(t, -1, buscar(cs[2], claves))
+	require.NotEqualValues(t, cs[0], cs[1])
+	require.NotEqualValues(t, cs[0], cs[2])
+	require.NotEqualValues(t, cs[2], cs[1])
+}
+
+func TestIteradorInternoValores(t *testing.T) {
+	t.Log("Valida que los datos sean recorridas correctamente (y una única vez) con el iterador interno")
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	clave4 := "Burrito"
+	clave5 := "Hamster"
+
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+	dic.Guardar(clave1, 6)
+	dic.Guardar(clave2, 2)
+	dic.Guardar(clave3, 3)
+	dic.Guardar(clave4, 4)
+	dic.Guardar(clave5, 5)
+
+	factorial := 1
+	ptrFactorial := &factorial
+	dic.Iterar(func(_ string, dato int) bool {
+		*ptrFactorial *= dato
+		return true
+	})
+
+	require.EqualValues(t, 720, factorial)
+}
+
+func TestIteradorInternoValoresConBorrados(t *testing.T) {
+	t.Log("Valida que los datos sean recorridas correctamente (y una única vez) con el iterador interno, sin recorrer datos borrados")
+	clave0 := "Elefante"
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	clave4 := "Burrito"
+	clave5 := "Hamster"
+
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+	dic.Guardar(clave0, 7)
+	dic.Guardar(clave1, 6)
+	dic.Guardar(clave2, 2)
+	dic.Guardar(clave3, 3)
+	dic.Guardar(clave4, 4)
+	dic.Guardar(clave5, 5)
+
+	dic.Borrar(clave0)
+
+	factorial := 1
+	ptrFactorial := &factorial
+	dic.Iterar(func(_ string, dato int) bool {
+		*ptrFactorial *= dato
+		return true
+	})
+
+	require.EqualValues(t, 720, factorial)
+}
+
+func ejecutarPruebaVolumen(b *testing.B, n int) {
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+
+	claves := make([]string, n)
+	valores := make([]int, n)
+
+	/* Inserta 'n' parejas en el abb */
+	for i := 0; i < n; i++ {
+		valores[i] = i
+		claves[i] = fmt.Sprintf("%08d", i)
+		dic.Guardar(claves[i], valores[i])
+	}
+
+	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
+
+	/* Verifica que devuelva los valores correctos */
+	ok := true
+	for i := 0; i < n; i++ {
+		ok = dic.Pertenece(claves[i])
+		if !ok {
+			break
+		}
+		ok = dic.Obtener(claves[i]) == valores[i]
+		if !ok {
+			break
+		}
+	}
+
+	require.True(b, ok, "Pertenece y Obtener con muchos elementos no funciona correctamente")
+	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
+
+	/* Verifica que borre y devuelva los valores correctos */
+	for i := 0; i < n; i++ {
+		ok = dic.Borrar(claves[i]) == valores[i]
+		if !ok {
+			break
+		}
+		ok = !dic.Pertenece(claves[i])
+		if !ok {
+			break
+		}
+	}
+
+	require.True(b, ok, "Borrar muchos elementos no funciona correctamente")
+	require.EqualValues(b, 0, dic.Cantidad())
+}
+
+func TestIterarDiccionarioVacio(t *testing.T) {
+	t.Log("Iterar sobre diccionario vacio es simplemente tenerlo al final")
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+	iter := dic.Iterador()
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+}
+
+func TestDiccionarioIterar(t *testing.T) {
+	t.Log("Guardamos 3 valores en un Diccionario, e iteramos validando que las claves sean todas diferentes " +
+		"pero pertenecientes al diccionario. Además los valores de VerActual y Siguiente van siendo correctos entre sí")
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	valor1 := "miau"
+	valor2 := "guau"
+	valor3 := "moo"
+	claves := []string{clave1, clave2, clave3}
+	valores := []string{valor1, valor2, valor3}
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
+	dic.Guardar(claves[0], valores[0])
+	dic.Guardar(claves[1], valores[1])
+	dic.Guardar(claves[2], valores[2])
+	iter := dic.Iterador()
+
+	require.True(t, iter.HaySiguiente())
+	primero, _ := iter.VerActual()
+	require.NotEqualValues(t, -1, buscar(primero, claves))
+
+	iter.Siguiente()
+	segundo, segundo_valor := iter.VerActual()
+	require.NotEqualValues(t, -1, buscar(segundo, claves))
+	require.EqualValues(t, valores[buscar(segundo, claves)], segundo_valor)
+	require.NotEqualValues(t, primero, segundo)
+	require.True(t, iter.HaySiguiente())
+
+	iter.Siguiente()
+	require.True(t, iter.HaySiguiente())
+	tercero, _ := iter.VerActual()
+	require.NotEqualValues(t, -1, buscar(tercero, claves))
+	require.NotEqualValues(t, primero, tercero)
+	require.NotEqualValues(t, segundo, tercero)
+	iter.Siguiente()
+
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+}
+
+func TestIteradorNoLlegaAlFinal(t *testing.T) {
+	t.Log("Crea un iterador y no lo avanza. Luego crea otro iterador y lo avanza.")
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
+	claves := []string{"A", "B", "C"}
+	dic.Guardar(claves[0], "")
+	dic.Guardar(claves[1], "")
+	dic.Guardar(claves[2], "")
+
+	dic.Iterador()
+	iter2 := dic.Iterador()
+	iter2.Siguiente()
+	iter3 := dic.Iterador()
+	primero, _ := iter3.VerActual()
+	iter3.Siguiente()
+	segundo, _ := iter3.VerActual()
+	iter3.Siguiente()
+	tercero, _ := iter3.VerActual()
+	iter3.Siguiente()
+	require.False(t, iter3.HaySiguiente())
+	require.NotEqualValues(t, primero, segundo)
+	require.NotEqualValues(t, tercero, segundo)
+	require.NotEqualValues(t, primero, tercero)
+	require.NotEqualValues(t, -1, buscar(primero, claves))
+	require.NotEqualValues(t, -1, buscar(segundo, claves))
+	require.NotEqualValues(t, -1, buscar(tercero, claves))
+}
+
+func TestPruebaIterarTrasBorrados(t *testing.T) {
+	t.Log("Prueba de caja blanca: Esta prueba intenta verificar el comportamiento del hash abierto cuando " +
+		"queda con listas vacías en su tabla. El iterador debería ignorar las listas vacías, avanzando hasta " +
+		"encontrar un elemento real.")
+
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
+	dic.Guardar(clave1, "")
+	dic.Guardar(clave2, "")
+	dic.Guardar(clave3, "")
+	dic.Borrar(clave1)
+	dic.Borrar(clave2)
+	dic.Borrar(clave3)
+	iter := dic.Iterador()
+
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+	dic.Guardar(clave1, "A")
+	iter = dic.Iterador()
+
+	require.True(t, iter.HaySiguiente())
+	c1, v1 := iter.VerActual()
+	require.EqualValues(t, clave1, c1)
+	require.EqualValues(t, "A", v1)
+	iter.Siguiente()
+	require.False(t, iter.HaySiguiente())
+}
+
+func ejecutarPruebasVolumenIterador(b *testing.B, n int) {
+	dic := TDADiccionarioOrdenado.CrearABB[string, *int](funcion_cmp)
+
+	claves := make([]string, n)
+	valores := make([]int, n)
+
+	/* Inserta 'n' parejas en el abb */
+	for i := 0; i < n; i++ {
+		claves[i] = fmt.Sprintf("%08d", i)
+		valores[i] = i
+		dic.Guardar(claves[i], &valores[i])
+	}
+
+	// Prueba de iteración sobre las claves almacenadas.
+	iter := dic.Iterador()
+	require.True(b, iter.HaySiguiente())
+
+	ok := true
+	var i int
+	var clave string
+	var valor *int
+
+	for i = 0; i < n; i++ {
+		if !iter.HaySiguiente() {
+			ok = false
+			break
+		}
+		c1, v1 := iter.VerActual()
+		clave = c1
+		if clave == "" {
+			ok = false
+			break
+		}
+		valor = v1
+		if valor == nil {
+			ok = false
+			break
+		}
+		*valor = n
+		iter.Siguiente()
+	}
+	require.True(b, ok, "Iteracion en volumen no funciona correctamente")
+	require.EqualValues(b, n, i, "No se recorrió todo el largo")
+	require.False(b, iter.HaySiguiente(), "El iterador debe estar al final luego de recorrer")
+
+	ok = true
+	for i = 0; i < n; i++ {
+		if valores[i] != n {
+			ok = false
+			break
+		}
+	}
+	require.True(b, ok, "No se cambiaron todos los elementos")
+}
+
+func TestVolumenIteradorCorte(t *testing.T) {
+	t.Log("Prueba de volumen de iterador interno, para validar que siempre que se indique que se corte" +
+		" la iteración con la función visitar, se corte")
+
+	dic := TDADiccionarioOrdenado.CrearABB[int, int](funcion_cmp)
+
+	/* Inserta 'n' parejas en el hash */
+	for i := 0; i < 10000; i++ {
+		dic.Guardar(i, i)
+	}
+
+	seguirEjecutando := true
+	siguioEjecutandoCuandoNoDebia := false
+
+	dic.Iterar(func(c int, v int) bool {
+		if !seguirEjecutando {
+			siguioEjecutandoCuandoNoDebia = true
+			return false
+		}
+		if c%100 == 0 {
+			seguirEjecutando = false
+			return false
+		}
+		return true
+	})
+
+	require.False(t, seguirEjecutando, "Se tendría que haber encontrado un elemento que genere el corte")
+	require.False(t, siguioEjecutandoCuandoNoDebia,
+		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
+}
+
+func TestIterarConRango(t *testing.T) {
+	t.Log("Iterar con un rango específico debería incluir solo los elementos dentro del rango")
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	clave4 := "Burrito"
+	clave5 := "Hamster"
+
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+	dic.Guardar(clave1, 6)
+	dic.Guardar(clave2, 2)
+	dic.Guardar(clave3, 3)
+	dic.Guardar(clave4, 4)
+	dic.Guardar(clave5, 5)
+
+	// Definimos el rango de claves desde "Gato" hasta "Vaca"
+	desde := "Gato"
+	hasta := "Vaca"
+
+	clavesEnRango := []string{}
+
+	dic.IterarRango(&desde, &hasta, func(clave string, _ int) bool {
+		clavesEnRango = append(clavesEnRango, clave)
+		return true
+	})
+
+	expectedClaves := []string{"Gato", "Hamster", "Perro", "Vaca"}
+	require.ElementsMatch(t, expectedClaves, clavesEnRango)
+}
+
+func TestIterarSinRango(t *testing.T) {
+	t.Log("Iterar sin un rango específico debería incluir todos los elementos del diccionario")
+	clave1 := "Gato"
+	clave2 := "Perro"
+	clave3 := "Vaca"
+	clave4 := "Burrito"
+	clave5 := "Hamster"
+
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
+	dic.Guardar(clave1, 6)
+	dic.Guardar(clave2, 2)
+	dic.Guardar(clave3, 3)
+	dic.Guardar(clave4, 4)
+	dic.Guardar(clave5, 5)
+
+	todasLasClaves := []string{}
+
+	dic.IterarRango(nil, nil, func(clave string, _ int) bool {
+		todasLasClaves = append(todasLasClaves, clave)
+		return true
+	})
+
+	expectedClaves := []string{"Burrito", "Gato", "Hamster", "Perro", "Vaca"}
+	require.ElementsMatch(t, expectedClaves, todasLasClaves)
+}
