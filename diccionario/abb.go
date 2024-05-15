@@ -1,6 +1,8 @@
 package diccionario
 
 import (
+	"reflect"
+	"strings"
 	TDAPila "tdas/pila"
 )
 
@@ -33,7 +35,6 @@ func (arbol *abb[K, V]) Pertenece(clave K) bool {
 	} else {
 		return true
 	}
-
 }
 
 func (arbol *abb[K, V]) Guardar(clave K, dato V) {
@@ -59,19 +60,17 @@ func (arbol *abb[K, V]) Obtener(clave K) V {
 
 	ramaEncontrada := arbol.raiz.buscarRama(clave, arbol.funcCmp)
 
-	if *ramaEncontrada == nil {
+	if ramaEncontrada == nil || *ramaEncontrada == nil {
 		panic("La clave no pertenece al diccionario")
-	} else {
-		nodoEncontrado := *ramaEncontrada
-		return nodoEncontrado.nodoRaiz.dato
 	}
+	nodoEncontrado := *ramaEncontrada
+	return nodoEncontrado.nodoRaiz.dato
 }
 
 func (arbol *abb[K, V]) Borrar(clave K) V {
-
 	ramaABorrar := arbol.raiz.buscarRama(clave, arbol.funcCmp)
 
-	if *ramaABorrar == nil {
+	if ramaABorrar == nil || *ramaABorrar == nil {
 		panic("La clave no pertenece al diccionario")
 	}
 
@@ -82,7 +81,6 @@ func (arbol *abb[K, V]) Borrar(clave K) V {
 	datoBorrado := (*ramaABorrar).nodoRaiz.dato
 
 	if (*ramaABorrar).derecho != nil && (*ramaABorrar).izquierdo != nil {
-
 		nodoAModificar := (*ramaABorrar)
 		ramaDerecha := &(*ramaABorrar).derecho
 		ramaABorrar = buscarRamaSucesorInmediato((*ramaABorrar).derecho)
@@ -91,7 +89,6 @@ func (arbol *abb[K, V]) Borrar(clave K) V {
 		}
 		nodoAModificar.nodoRaiz.clave = (*ramaABorrar).nodoRaiz.clave
 		nodoAModificar.nodoRaiz.dato = (*ramaABorrar).nodoRaiz.dato
-
 	}
 
 	(*ramaABorrar) = hallarHijoNoNulo((*ramaABorrar).izquierdo, (*ramaABorrar).derecho)
@@ -282,4 +279,25 @@ func (iterAbb *iteradorAbb[K, V]) apilarNodosMenores(raiz *nodoAbb[K, V]) {
 		}
 	}
 
+}
+
+func Funcion_cmp[K comparable](clave1, clave2 K) int {
+	tipoClave := reflect.TypeOf(clave1)
+
+	switch tipoClave.Kind() {
+	case reflect.String:
+		c1 := reflect.ValueOf(clave1).String()
+		c2 := reflect.ValueOf(clave2).String()
+		return strings.Compare(c1, c2)
+	case reflect.Int:
+		c1 := reflect.ValueOf(clave1).Int()
+		c2 := reflect.ValueOf(clave2).Int()
+		if c1 < c2 {
+			return -1
+		} else if c1 > c2 {
+			return 1
+		}
+		return 0
+	}
+	return 0
 }
