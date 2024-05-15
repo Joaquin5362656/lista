@@ -28,11 +28,12 @@ func crearNodoAbb[K comparable, V any](nuevoElemento parClaveValor[K, V]) *nodoA
 
 func (arbol *abb[K, V]) Pertenece(clave K) bool {
 
-	if arbol.raiz == nil {
+	ramaABuscar := arbol.raiz.buscarRama(clave, arbol.funcCmp)
+
+	if *ramaABuscar == nil {
 		return false
 	} else {
-		ramaEncontrada := arbol.raiz.buscarRama(clave, arbol.funcCmp)
-		return ramaEncontrada != nil && *ramaEncontrada != nil
+		return true
 	}
 }
 
@@ -71,6 +72,10 @@ func (arbol *abb[K, V]) Borrar(clave K) V {
 
 	if ramaABorrar == nil || *ramaABorrar == nil {
 		panic("La clave no pertenece al diccionario")
+	}
+
+	if *ramaABorrar == arbol.raiz {
+		ramaABorrar = &arbol.raiz
 	}
 
 	datoBorrado := (*ramaABorrar).nodoRaiz.dato
@@ -135,11 +140,11 @@ func (nodoArbol *nodoAbb[K, V]) iterarRangoRec(desde *K, hasta *K, visitar func(
 	mayorRangoInferior := false
 	seguirIterando = true
 
-	if comparar(*desde, nodoArbol.nodoRaiz.clave) <= 0 {
+	if desde == nil || comparar(*desde, nodoArbol.nodoRaiz.clave) <= 0 {
 		seguirIterando = nodoArbol.izquierdo.iterarRangoRec(desde, hasta, visitar, comparar)
 		mayorRangoInferior = true
 	}
-	if comparar(*hasta, nodoArbol.nodoRaiz.clave) >= 0 {
+	if hasta == nil || comparar(*hasta, nodoArbol.nodoRaiz.clave) >= 0 {
 		if mayorRangoInferior {
 			seguirIterando = visitar(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato)
 		}
@@ -169,18 +174,16 @@ func buscarRamaSucesorInmediato[K comparable, V any](raiz *nodoAbb[K, V]) **nodo
 }
 
 func hallarHijoNoNulo[K comparable, V any](izquierdo *nodoAbb[K, V], derecho *nodoAbb[K, V]) *nodoAbb[K, V] {
-
 	if izquierdo == nil {
 		return derecho
-	} else {
-		return izquierdo
 	}
+	return izquierdo
 }
 
 func (rama *nodoAbb[K, V]) buscarRama(clave K, comparar func(K, K) int) **nodoAbb[K, V] {
 
 	if rama == nil {
-		return nil
+		return &rama
 	}
 
 	if rama.nodoRaiz.clave == clave {
@@ -233,12 +236,20 @@ func (iterAbb *iteradorAbb[K, V]) HaySiguiente() bool {
 
 func (iterAbb *iteradorAbb[K, V]) Siguiente() {
 
+	if !iterAbb.HaySiguiente() {
+		panic("El iterador termino de iterar")
+	}
+
 	nodoIterado := iterAbb.nodosEnOrden.Desapilar()
 	iterAbb.apilarNodosMenores(nodoIterado.derecho)
 
 }
 
 func (iterAbb *iteradorAbb[K, V]) VerActual() (K, V) {
+
+	if !iterAbb.HaySiguiente() {
+		panic("El iterador termino de iterar")
+	}
 
 	actual := iterAbb.nodosEnOrden.VerTope()
 	return actual.nodoRaiz.clave, actual.nodoRaiz.dato
