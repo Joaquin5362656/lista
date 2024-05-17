@@ -606,3 +606,23 @@ func TestIterarSinRango(t *testing.T) {
 	expectedClaves := []string{"Burrito", "Gato", "Hamster", "Perro", "Vaca"}
 	require.ElementsMatch(t, expectedClaves, todasLasClaves)
 }
+func TestIterarRangoSinHasta(t *testing.T) {
+	t.Log("Iterar poniendo un rango de elementos pero sin un hasta (=nil)")
+	dic := TDADiccionarioOrdenado.CrearABB[int, int](TDADiccionarioOrdenado.Funcion_cmp)
+	claves := []int{1, 2, 3, 4, 5}
+	for _, clave := range claves {
+		dic.Guardar(clave, clave)
+	}
+
+	desde := 3
+
+	clavesEnRango := []int{}
+
+	dic.IterarRango(&desde, nil, func(clave int, _ int) bool {
+		clavesEnRango = append(clavesEnRango, clave)
+		return true
+	})
+
+	expectedClaves := []int{3, 4, 5}
+	require.ElementsMatch(t, expectedClaves, clavesEnRango)
+}

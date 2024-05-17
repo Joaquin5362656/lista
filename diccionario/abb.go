@@ -256,27 +256,16 @@ func (iterAbb *iteradorAbb[K, V]) VerActual() (K, V) {
 }
 
 func (iterAbb *iteradorAbb[K, V]) apilarNodosMenores(raiz *nodoAbb[K, V]) {
-
 	if raiz == nil {
 		return
 	}
 
-	if iterAbb.hasta == nil || iterAbb.comparar(*iterAbb.hasta, raiz.nodoRaiz.clave) >= 0 {
+	if (iterAbb.desde == nil || iterAbb.comparar(*iterAbb.desde, raiz.nodoRaiz.clave) <= 0) &&
+		(iterAbb.hasta == nil || iterAbb.comparar(*iterAbb.hasta, raiz.nodoRaiz.clave) >= 0) {
 		iterAbb.nodosEnOrden.Apilar(raiz)
 	}
 
-	raiz = raiz.izquierdo
-
-	for raiz != nil {
-		if iterAbb.desde == nil || iterAbb.comparar(*iterAbb.desde, raiz.nodoRaiz.clave) <= 0 {
-			iterAbb.nodosEnOrden.Apilar(raiz)
-			raiz = raiz.izquierdo
-		} else {
-			iterAbb.apilarNodosMenores(raiz.derecho)
-			raiz = nil
-		}
-	}
-
+	iterAbb.apilarNodosMenores(raiz.izquierdo)
 }
 
 func Funcion_cmp[K comparable](clave1, clave2 K) int {
