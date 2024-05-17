@@ -309,53 +309,6 @@ func TestIteradorInternoValoresConBorrados(t *testing.T) {
 	require.EqualValues(t, 720, factorial)
 }
 
-func ejecutarPruebaVolumen(b *testing.B, n int) {
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
-
-	claves := make([]string, n)
-	valores := make([]int, n)
-
-	/* Inserta 'n' parejas en el abb */
-	for i := 0; i < n; i++ {
-		valores[i] = i
-		claves[i] = fmt.Sprintf("%08d", i)
-		dic.Guardar(claves[i], valores[i])
-	}
-
-	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
-
-	/* Verifica que devuelva los valores correctos */
-	ok := true
-	for i := 0; i < n; i++ {
-		ok = dic.Pertenece(claves[i])
-		if !ok {
-			break
-		}
-		ok = dic.Obtener(claves[i]) == valores[i]
-		if !ok {
-			break
-		}
-	}
-
-	require.True(b, ok, "Pertenece y Obtener con muchos elementos no funciona correctamente")
-	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
-
-	/* Verifica que borre y devuelva los valores correctos */
-	for i := 0; i < n; i++ {
-		ok = dic.Borrar(claves[i]) == valores[i]
-		if !ok {
-			break
-		}
-		ok = !dic.Pertenece(claves[i])
-		if !ok {
-			break
-		}
-	}
-
-	require.True(b, ok, "Borrar muchos elementos no funciona correctamente")
-	require.EqualValues(b, 0, dic.Cantidad())
-}
-
 func TestIterarDiccionarioVacio(t *testing.T) {
 	t.Log("Iterar sobre diccionario vacio es simplemente tenerlo al final")
 	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
@@ -463,61 +416,6 @@ func TestPruebaIterarTrasBorrados(t *testing.T) {
 	require.EqualValues(t, "A", v1)
 	iter.Siguiente()
 	require.False(t, iter.HaySiguiente())
-}
-
-func ejecutarPruebasVolumenIterador(b *testing.B, n int) {
-	dic := TDADiccionarioOrdenado.CrearABB[string, *int](TDADiccionarioOrdenado.Funcion_cmp)
-
-	claves := make([]string, n)
-	valores := make([]int, n)
-
-	/* Inserta 'n' parejas en el abb */
-	for i := 0; i < n; i++ {
-		claves[i] = fmt.Sprintf("%08d", i)
-		valores[i] = i
-		dic.Guardar(claves[i], &valores[i])
-	}
-
-	// Prueba de iteración sobre las claves almacenadas.
-	iter := dic.Iterador()
-	require.True(b, iter.HaySiguiente())
-
-	ok := true
-	var i int
-	var clave string
-	var valor *int
-
-	for i = 0; i < n; i++ {
-		if !iter.HaySiguiente() {
-			ok = false
-			break
-		}
-		c1, v1 := iter.VerActual()
-		clave = c1
-		if clave == "" {
-			ok = false
-			break
-		}
-		valor = v1
-		if valor == nil {
-			ok = false
-			break
-		}
-		*valor = n
-		iter.Siguiente()
-	}
-	require.True(b, ok, "Iteracion en volumen no funciona correctamente")
-	require.EqualValues(b, n, i, "No se recorrió todo el largo")
-	require.False(b, iter.HaySiguiente(), "El iterador debe estar al final luego de recorrer")
-
-	ok = true
-	for i = 0; i < n; i++ {
-		if valores[i] != n {
-			ok = false
-			break
-		}
-	}
-	require.True(b, ok, "No se cambiaron todos los elementos")
 }
 
 func TestVolumenIteradorCorte(t *testing.T) {
