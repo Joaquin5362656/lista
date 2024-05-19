@@ -27,14 +27,8 @@ func crearNodoAbb[K comparable, V any](nuevoElemento parClaveValor[K, V]) *nodoA
 }
 
 func (arbol *abb[K, V]) Pertenece(clave K) bool {
-
 	ramaABuscar := arbol.raiz.buscarRama(clave, arbol.funcCmp)
-
-	if *ramaABuscar == nil {
-		return false
-	} else {
-		return true
-	}
+	return ramaABuscar != nil && *ramaABuscar != nil
 }
 
 func (arbol *abb[K, V]) Guardar(clave K, dato V) {
@@ -103,59 +97,51 @@ func (arbol *abb[K, V]) Cantidad() int {
 }
 
 func (arbol *abb[K, V]) Iterar(funcion func(clave K, dato V) bool) {
-
-	arbol.raiz.iterarRec(funcion)
+	if arbol.raiz != nil {
+		arbol.raiz.iterarRec(funcion)
+	}
 }
 
 func (nodoArbol *nodoAbb[K, V]) iterarRec(funcion func(clave K, dato V) bool) bool {
-
 	if nodoArbol == nil {
 		return true
 	}
-
-	seguirIterando := nodoArbol.izquierdo.iterarRec(funcion)
-
-	if seguirIterando {
-		seguirIterando = funcion(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato)
-	}
-
-	if seguirIterando {
-		return nodoArbol.derecho.iterarRec(funcion)
-	} else {
+	if !nodoArbol.izquierdo.iterarRec(funcion) {
 		return false
 	}
+	if !funcion(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato) {
+		return false
+	}
+	return nodoArbol.derecho.iterarRec(funcion)
 }
 
 func (arbol *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-
-	arbol.raiz.iterarRangoRec(desde, hasta, visitar, arbol.funcCmp)
+	if arbol.raiz != nil {
+		arbol.raiz.iterarRangoRec(desde, hasta, visitar, arbol.funcCmp)
+	}
 }
 
-func (nodoArbol *nodoAbb[K, V]) iterarRangoRec(desde *K, hasta *K, visitar func(clave K, dato V) bool, comparar func(K, K) int) (seguirIterando bool) {
-
+func (nodoArbol *nodoAbb[K, V]) iterarRangoRec(desde *K, hasta *K, visitar func(clave K, dato V) bool, comparar func(K, K) int) bool {
 	if nodoArbol == nil {
 		return true
 	}
-
-	mayorRangoInferior := false
-	seguirIterando = true
-
 	if desde == nil || comparar(*desde, nodoArbol.nodoRaiz.clave) <= 0 {
-		seguirIterando = nodoArbol.izquierdo.iterarRangoRec(desde, hasta, visitar, comparar)
-		mayorRangoInferior = true
+		if !nodoArbol.izquierdo.iterarRangoRec(desde, hasta, visitar, comparar) {
+			return false
+		}
+	}
+	if (desde == nil || comparar(*desde, nodoArbol.nodoRaiz.clave) <= 0) &&
+		(hasta == nil || comparar(*hasta, nodoArbol.nodoRaiz.clave) >= 0) {
+		if !visitar(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato) {
+			return false
+		}
 	}
 	if hasta == nil || comparar(*hasta, nodoArbol.nodoRaiz.clave) >= 0 {
-		if mayorRangoInferior {
-			seguirIterando = visitar(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato)
-		}
-
-		if seguirIterando {
-			seguirIterando = nodoArbol.derecho.iterarRangoRec(desde, hasta, visitar, comparar)
+		if !nodoArbol.derecho.iterarRangoRec(desde, hasta, visitar, comparar) {
+			return false
 		}
 	}
-
-	return seguirIterando
-
+	return true
 }
 
 func buscarRamaSucesorInmediato[K comparable, V any](raiz *nodoAbb[K, V]) **nodoAbb[K, V] {

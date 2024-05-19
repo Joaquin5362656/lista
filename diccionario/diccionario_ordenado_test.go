@@ -524,3 +524,74 @@ func TestIterarRangoSinHasta(t *testing.T) {
 	expectedClaves := []int{3, 4, 5}
 	require.ElementsMatch(t, expectedClaves, clavesEnRango)
 }
+
+func TestIteradorEnOrden(t *testing.T) {
+	dic := TDADiccionarioOrdenado.CrearABB[int, string](TDADiccionarioOrdenado.Funcion_cmp)
+	claves := []int{5, 3, 7, 2, 4, 6, 8}
+	for _, clave := range claves {
+		dic.Guardar(clave, fmt.Sprintf("valor%d", clave))
+	}
+
+	// Iterar sin rango
+	iter := dic.Iterador()
+	var resultados []int
+	for iter.HaySiguiente() {
+		clave, _ := iter.VerActual()
+		resultados = append(resultados, clave)
+		iter.Siguiente()
+	}
+	expected := []int{2, 3, 4, 5, 6, 7, 8}
+	require.EqualValues(t, expected, resultados)
+
+	// Iterar con rango (desde=3, hasta=6)
+	resultados = []int{}
+	iter = dic.IteradorRango(&claves[1], &claves[5])
+	for iter.HaySiguiente() {
+		clave, _ := iter.VerActual()
+		resultados = append(resultados, clave)
+		iter.Siguiente()
+	}
+	expected = []int{3, 4, 5, 6}
+	require.EqualValues(t, expected, resultados)
+
+	// Iterar con hasta == nil (desde=3)
+	resultados = []int{}
+	iter = dic.IteradorRango(&claves[1], nil)
+	for iter.HaySiguiente() {
+		clave, _ := iter.VerActual()
+		resultados = append(resultados, clave)
+		iter.Siguiente()
+	}
+	expected = []int{3, 4, 5, 6, 7, 8}
+	require.EqualValues(t, expected, resultados)
+}
+
+func TestIterarRango(t *testing.T) {
+	diccionario := TDADiccionarioOrdenado.CrearABB[int, string](TDADiccionarioOrdenado.Funcion_cmp)
+
+	claves := []int{5, 3, 7, 2, 4, 6, 8}
+	for _, clave := range claves {
+		diccionario.Guardar(clave, "valor")
+	}
+
+	var resultados []int
+	diccionario.IterarRango(nil, nil, func(clave int, valor string) bool {
+		resultados = append(resultados, clave)
+		return true
+	})
+	require.Equal(t, []int{2, 3, 4, 5, 6, 7, 8}, resultados)
+
+	resultados = []int{}
+	diccionario.IterarRango(&claves[1], &claves[5], func(clave int, valor string) bool {
+		resultados = append(resultados, clave)
+		return true
+	})
+	require.Equal(t, []int{3, 4, 5, 6}, resultados)
+
+	resultados = []int{}
+	diccionario.IterarRango(&claves[1], nil, func(clave int, valor string) bool {
+		resultados = append(resultados, clave)
+		return true
+	})
+	require.Equal(t, []int{3, 4, 5, 6, 7, 8}, resultados)
+}
