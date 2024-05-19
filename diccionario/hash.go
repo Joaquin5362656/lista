@@ -8,10 +8,10 @@ import (
 type redimensionado int
 
 const (
-	factorDeCarga  float32        = 2.3
-	tamanioInicial int            = 17
-	ampliarTabla   redimensionado = iota
-	reducirTabla
+	_FACTORDECARGA  float32        = 2.3
+	_TAMANIOINICIAL int            = 17
+	_AMPLIARTABLA   redimensionado = iota
+	_REDUCIRTABLA
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -45,35 +45,27 @@ func crearTablaHash[K comparable, V any](tam int) []TDALista.Lista[parClaveValor
 }
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
-	tam := tamanioInicial
+	tam := _TAMANIOINICIAL
 	return &hashAbierto[K, V]{tabla: crearTablaHash[K, V](tam), tam: tam}
 }
 
 func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 
-	elementoEnLista := buscarConClave(h.tabla, clave)
+	_, encontrado := buscarConClave(h.tabla, clave)
 
-	if elementoEnLista.HaySiguiente() {
-		return true
-	} else {
-		return false
-	}
+	return encontrado
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 
-	elementoEnLista := buscarConClave(h.tabla, clave)
-
-	if elementoEnLista.HaySiguiente() {
+	if float32(h.cantidad)/float32(h.tam) >= _FACTORDECARGA {
+		h.redimensionar(_AMPLIARTABLA)
+	}
+	elementoEnLista, encontrado := buscarConClave(h.tabla, clave)
+	if encontrado {
 		elementoEnLista.Borrar()
 	} else {
 		h.cantidad++
-
-		if float32(h.cantidad)/float32(h.tam) >= factorDeCarga {
-			h.redimensionar(ampliarTabla)
-			elementoEnLista = buscarConClave(h.tabla, clave)
-		}
-
 	}
 
 	elementoEnLista.Insertar(parClaveValor[K, V]{clave: clave, dato: dato})
@@ -82,9 +74,9 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
 
-	elementoEnLista := buscarConClave(h.tabla, clave)
+	elementoEnLista, encontrado := buscarConClave(h.tabla, clave)
 
-	if elementoEnLista.HaySiguiente() {
+	if encontrado {
 		return elementoEnLista.VerActual().dato
 	} else {
 		panic("La clave no pertenece al diccionario")
@@ -94,22 +86,20 @@ func (h *hashAbierto[K, V]) Obtener(clave K) V {
 
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
 
-	elementoEnLista := buscarConClave(h.tabla, clave)
+	elementoEnLista, encontrado := buscarConClave(h.tabla, clave)
 
-	if elementoEnLista.HaySiguiente() {
-		datoEliminado := elementoEnLista.VerActual().dato
-		elementoEnLista.Borrar()
-		h.cantidad--
-
-		if float32(h.cantidad)/float32(h.tam) <= factorDeCarga/4 {
-			h.redimensionar(reducirTabla)
-		}
-
-		return datoEliminado
-	} else {
+	if !encontrado {
 		panic("La clave no pertenece al diccionario")
 	}
 
+	datoEliminado := elementoEnLista.Borrar().dato
+	h.cantidad--
+
+	if float32(h.cantidad)/float32(h.tam) <= _FACTORDECARGA/4 {
+		h.redimensionar(_REDUCIRTABLA)
+	}
+
+	return datoEliminado
 }
 
 func (h *hashAbierto[K, V]) Cantidad() int {
@@ -135,22 +125,19 @@ func (h *hashAbierto[K, V]) Iterar(funcion func(clave K, dato V) bool) {
 
 }
 
-func buscarConClave[K comparable, V any](tablaHash []TDALista.Lista[parClaveValor[K, V]], clave K) (iterLista TDALista.IteradorLista[parClaveValor[K, V]]) {
+func buscarConClave[K comparable, V any](tablaHash []TDALista.Lista[parClaveValor[K, V]], clave K) (iterLista TDALista.IteradorLista[parClaveValor[K, V]], encontrado bool) {
 
 	listaABuscar := tablaHash[hashBernstein(convertirABytes(clave))%uint32(len(tablaHash))]
 
-	var elementoEncontrado bool = false
-
 	iterLista = listaABuscar.Iterador()
-	for !elementoEncontrado && iterLista.HaySiguiente() {
+	for iterLista.HaySiguiente() {
 		if clave == iterLista.VerActual().clave {
-			elementoEncontrado = true
-		} else {
-			iterLista.Siguiente()
+			return iterLista, true
 		}
+		iterLista.Siguiente()
 	}
 
-	return iterLista
+	return iterLista, false
 }
 
 func convertirABytes[K comparable](clave K) []byte {
@@ -161,21 +148,20 @@ func (h *hashAbierto[K, V]) redimensionar(tipoDeRedimension redimensionado) {
 
 	nuevoTamanio := hallarPrimoMasOptimo(h.tam, tipoDeRedimension)
 
-	if nuevoTamanio < tamanioInicial {
-		nuevoTamanio = tamanioInicial
+	if nuevoTamanio < _TAMANIOINICIAL {
+		nuevoTamanio = _TAMANIOINICIAL
 	}
 
 	nuevaTabla := crearTablaHash[K, V](nuevoTamanio)
 
 	h.Iterar(func(clave K, dato V) bool {
-		elementoEnLista := buscarConClave(nuevaTabla, clave)
-		elementoEnLista.Insertar(parClaveValor[K, V]{clave, dato})
+		posicion := hashBernstein(convertirABytes(clave)) % uint32(nuevoTamanio)
+		nuevaTabla[posicion].InsertarUltimo(parClaveValor[K, V]{clave, dato})
 		return true
 	})
 
 	h.tam = nuevoTamanio
 	h.tabla = nuevaTabla
-
 }
 
 //		Esta funcion busca el numero mas optimo para la redimension buscando el numero primo
@@ -194,9 +180,9 @@ func hallarPrimoMasOptimo(primoAnterior int, tipoDeRedimension redimensionado) i
 	floatAux := float32(primoAnterior) / 10
 	enteroDivisibleX10 := 0
 
-	if tipoDeRedimension == ampliarTabla {
+	if tipoDeRedimension == _AMPLIARTABLA {
 		enteroDivisibleX10 = int(floatAux * 2)
-	} else if tipoDeRedimension == reducirTabla {
+	} else if tipoDeRedimension == _REDUCIRTABLA {
 		enteroDivisibleX10 = int(floatAux / 4)
 	}
 
@@ -244,38 +230,29 @@ func (hash *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
 }
 
 func (iterHash *iteradorHash[K, V]) HaySiguiente() bool {
-
-	if iterHash.iteradorLista == nil {
-		return false
-	} else {
-		return true
-	}
-
+	return iterHash.iteradorLista != nil
 }
 
 func (iterHash *iteradorHash[K, V]) Siguiente() {
 
-	if iterHash.HaySiguiente() {
-
-		iterHash.iteradorLista.Siguiente()
-
-		if !iterHash.iteradorLista.HaySiguiente() {
-			iterHash.iteradorLista = iterHash.encontrarSiguienteLista()
-		}
-
-	} else {
+	if !iterHash.HaySiguiente() {
 		panic("El iterador termino de iterar")
+	}
+	iterHash.iteradorLista.Siguiente()
+
+	if !iterHash.iteradorLista.HaySiguiente() {
+		iterHash.iteradorLista = iterHash.encontrarSiguienteLista()
 	}
 
 }
 
 func (iterHash *iteradorHash[K, V]) VerActual() (K, V) {
 
-	if iterHash.HaySiguiente() {
-		return iterHash.iteradorLista.VerActual().clave, iterHash.iteradorLista.VerActual().dato
-	} else {
+	if !iterHash.HaySiguiente() {
 		panic("El iterador termino de iterar")
+
 	}
+	return iterHash.iteradorLista.VerActual().clave, iterHash.iteradorLista.VerActual().dato
 }
 
 func (iterHash *iteradorHash[K, V]) encontrarSiguienteLista() TDALista.IteradorLista[parClaveValor[K, V]] {
