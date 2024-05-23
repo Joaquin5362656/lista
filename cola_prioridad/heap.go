@@ -54,9 +54,14 @@ func (cola *colaConPrioridad[T]) Desencolar() T {
 	}
 	maxElem := cola.datos[0]
 	cola.datos[0] = cola.datos[cola.cant-1]
-	cola.datos = cola.datos[:cola.cant-1]
 	cola.cant--
 	cola.downHeap(0)
+	cola.datos = cola.datos[:cola.cant]
+
+	if 4*cola.cant <= len(cola.datos) && cola.cant > 0 {
+		cola.redimensionar()
+	}
+
 	return maxElem
 }
 
@@ -92,14 +97,47 @@ func (cola *colaConPrioridad[T]) downHeap(pos int) {
 }
 
 func (cola *colaConPrioridad[T]) heapify() {
-	for i := cola.cant/2 - 1; i >= 0; i-- {
-		cola.downHeap(i)
-	}
+	heapify(cola.datos, cola.cant, cola.cmp)
 }
 
 func HeapSort[T any](elementos []T, funcion_cmp func(T, T) int) {
-	heap := CrearHeapArr(elementos, funcion_cmp)
-	for i := len(elementos) - 1; i >= 0; i-- {
-		elementos[i] = heap.Desencolar()
+	heapify(elementos, len(elementos), funcion_cmp)
+
+	for i := len(elementos) - 1; i > 0; i-- {
+		elementos[0], elementos[i] = elementos[i], elementos[0]
+		downHeap(elementos, i, 0, funcion_cmp)
 	}
+}
+
+func heapify[T any](datos []T, n int, cmp func(T, T) int) {
+	for i := n/2 - 1; i >= 0; i-- {
+		downHeap(datos, n, i, cmp)
+	}
+}
+
+func downHeap[T any](datos []T, n, pos int, cmp func(T, T) int) {
+	for {
+		hijoIzq := 2*pos + 1
+		hijoDer := 2*pos + 2
+		mayor := pos
+
+		if hijoIzq < n && cmp(datos[hijoIzq], datos[mayor]) > 0 {
+			mayor = hijoIzq
+		}
+		if hijoDer < n && cmp(datos[hijoDer], datos[mayor]) > 0 {
+			mayor = hijoDer
+		}
+		if mayor == pos {
+			return
+		}
+		datos[pos], datos[mayor] = datos[mayor], datos[pos]
+		pos = mayor
+	}
+}
+
+func (cola *colaConPrioridad[T]) redimensionar() {
+	nuevaCapacidad := len(cola.datos) / 2
+	nuevaCopia := make([]T, cola.cant, nuevaCapacidad)
+	copy(nuevaCopia, cola.datos[:cola.cant])
+	cola.datos = nuevaCopia
 }

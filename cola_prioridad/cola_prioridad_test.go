@@ -12,7 +12,7 @@ func TestHeapVacio(t *testing.T) {
 		return a - b
 	})
 
-	require.True(t, heap.EstaVacia(), "El heap debería estar vacío inicialmente")
+	require.True(t, heap.EstaVacia())
 	require.PanicsWithValue(t, "La cola esta vacia", func() { heap.VerMax() })
 	require.PanicsWithValue(t, "La cola esta vacia", func() { heap.Desencolar() })
 }
@@ -103,7 +103,6 @@ func TestHeapVolumen(t *testing.T) {
 	require.True(t, heap.EstaVacia())
 }
 
-// Casos bordes adicionales.
 func TestHeapUnElemento(t *testing.T) {
 	heap := TDAHeap.CrearHeap[int](func(a, b int) int {
 		return a - b
