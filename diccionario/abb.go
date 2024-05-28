@@ -212,7 +212,11 @@ func crearIteradorAbb[K comparable, V any](raiz *nodoAbb[K, V], desde *K, hasta 
 
 	nodosAIterar := TDAPila.CrearPilaDinamica[*nodoAbb[K, V]]()
 	iterAbb := iteradorAbb[K, V]{nodosAIterar, desde, hasta, comparar}
-	iterAbb.apilarNodosMenores(raiz)
+
+	if iterAbb.desde == nil || iterAbb.hasta == nil || iterAbb.comparar(*iterAbb.desde, *iterAbb.hasta) <= 0 {
+		iterAbb.apilarNodosMenores(raiz)
+	}
+
 	return &iterAbb
 }
 
@@ -242,16 +246,30 @@ func (iterAbb *iteradorAbb[K, V]) VerActual() (K, V) {
 }
 
 func (iterAbb *iteradorAbb[K, V]) apilarNodosMenores(raiz *nodoAbb[K, V]) {
+
 	if raiz == nil {
 		return
 	}
 
-	if (iterAbb.desde == nil || iterAbb.comparar(*iterAbb.desde, raiz.nodoRaiz.clave) <= 0) &&
-		(iterAbb.hasta == nil || iterAbb.comparar(*iterAbb.hasta, raiz.nodoRaiz.clave) >= 0) {
+	raizEsMenorRango := false
+	raizEsMayorRango := false
+
+	if iterAbb.desde != nil && iterAbb.comparar(*iterAbb.desde, raiz.nodoRaiz.clave) > 0 {
+		raizEsMenorRango = true
+	} else if iterAbb.hasta != nil && iterAbb.comparar(*iterAbb.hasta, raiz.nodoRaiz.clave) < 0 {
+		raizEsMayorRango = true
+	}
+
+	if !raizEsMenorRango && !raizEsMayorRango {
 		iterAbb.nodosEnOrden.Apilar(raiz)
 	}
 
-	iterAbb.apilarNodosMenores(raiz.izquierdo)
+	if raizEsMenorRango {
+		iterAbb.apilarNodosMenores(raiz.derecho)
+	} else {
+		iterAbb.apilarNodosMenores(raiz.izquierdo)
+	}
+
 }
 
 func Funcion_cmp[K comparable](clave1, clave2 K) int {
