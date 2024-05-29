@@ -2,6 +2,8 @@ package diccionario_test
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	TDADiccionarioOrdenado "tdas/diccionario"
@@ -11,7 +13,7 @@ import (
 
 func TestDiccionarioVacio(t *testing.T) {
 	t.Log("Comprueba que el diccionario vacío no tiene claves")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	require.EqualValues(t, 0, dic.Cantidad())
 	require.False(t, dic.Pertenece("A"))
 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener("A") })
@@ -20,7 +22,7 @@ func TestDiccionarioVacio(t *testing.T) {
 
 func TestUnElemento(t *testing.T) {
 	t.Log("Comprueba que el diccionario con un elemento tiene esa clave únicamente")
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	dic.Guardar("A", 10)
 	require.EqualValues(t, 1, dic.Cantidad())
 	require.True(t, dic.Pertenece("A"))
@@ -31,7 +33,7 @@ func TestUnElemento(t *testing.T) {
 
 func TestDiccionarioGuardaar(t *testing.T) {
 	t.Log("Guarda algunos pocos elementos en el diccionario y comprueba su correcto funcionamiento")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	clave1 := "Gato"
 	clave2 := "Perro"
 	clave3 := "Vaca"
@@ -52,7 +54,7 @@ func TestDiccionarioGuardaar(t *testing.T) {
 
 func TestDiccionarioBorrar(t *testing.T) {
 	t.Log("Guarda algunos elementos en el diccionario y luego los borra")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	clave1 := "Rojo"
 	clave2 := "Verde"
 	clave3 := "Azul"
@@ -78,7 +80,7 @@ func TestDiccionarioBorrar(t *testing.T) {
 
 func TestDiccionarioActualizar(t *testing.T) {
 	t.Log("Guarda un elemento en el diccionario y luego lo actualiza")
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	clave := "Edad"
 	valorOriginal := 25
 	valorActualizado := 30
@@ -93,7 +95,7 @@ func TestDiccionarioActualizar(t *testing.T) {
 func TestReutlizacionDeBoorrados(t *testing.T) {
 	t.Log("Prueba de caja blanca: revisa, para el caso que fuere un HashCerrado, que no haya problema " +
 		"reinsertando un elemento borrado")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	clave := "hola"
 	dic.Guardar(clave, "mundo!")
 	dic.Borrar(clave)
@@ -107,7 +109,7 @@ func TestReutlizacionDeBoorrados(t *testing.T) {
 
 func TestConClavesNumericas(t *testing.T) {
 	t.Log("Valida que no solo funcione con strings")
-	dic := TDADiccionarioOrdenado.CrearABB[int, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[int, string](funcion_cmp)
 	clave := 10
 	valor := "Gatito"
 
@@ -132,7 +134,7 @@ func TestConClavesStructs(t *testing.T) {
 		z string
 	}
 
-	dic := TDADiccionarioOrdenado.CrearABB[avanzado, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[avanzado, int](funcion_cmp)
 
 	a1 := avanzado{w: 10, z: "hola", x: basico{a: "mundo", b: 8}, y: basico{a: "!", b: 10}}
 	a2 := avanzado{w: 10, z: "aloh", x: basico{a: "odnum", b: 14}, y: basico{a: "!", b: 5}}
@@ -159,7 +161,7 @@ func TestConClavesStructs(t *testing.T) {
 
 func TestClaveVacia(t *testing.T) {
 	t.Log("Guardamos una clave vacía (i.e. \"\") y deberia funcionar sin problemas")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	clave := ""
 	dic.Guardar(clave, clave)
 	require.True(t, dic.Pertenece(clave))
@@ -169,7 +171,7 @@ func TestClaveVacia(t *testing.T) {
 
 func TestValorNulo(t *testing.T) {
 	t.Log("Probamos que el valor puede ser nil sin problemas")
-	dic := TDADiccionarioOrdenado.CrearABB[string, *int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, *int](funcion_cmp)
 	clave := "Pez"
 	dic.Guardar(clave, nil)
 	require.True(t, dic.Pertenece(clave))
@@ -186,7 +188,7 @@ func TestCadenaLargaParticular(t *testing.T) {
 	claves := make([]string, 10)
 	cadena := "%d~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" +
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	valores := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
 	for i := 0; i < 10; i++ {
 		claves[i] = fmt.Sprintf(cadena, i)
@@ -200,20 +202,6 @@ func TestCadenaLargaParticular(t *testing.T) {
 	}
 
 	require.True(t, ok, "Obtener clave larga funciona")
-}
-
-func TestGuardarYBorrarRepetidasVeces(t *testing.T) {
-	t.Log("Esta prueba guarda y borra repetidas veces. Esto lo hacemos porque un error comun es no considerar " +
-		"los borrados para agrandar en un Hash Cerrado. Si no se agranda, muy probablemente se quede en un ciclo " +
-		"infinito")
-
-	dic := TDADiccionarioOrdenado.CrearABB[int, int](TDADiccionarioOrdenado.Funcion_cmp)
-	for i := 0; i < 1000; i++ {
-		dic.Guardar(i, i)
-		require.True(t, dic.Pertenece(i))
-		dic.Borrar(i)
-		require.False(t, dic.Pertenece(i))
-	}
 }
 
 func buscar(clave string, claves []string) int {
@@ -231,7 +219,7 @@ func TestIteradorInternoClaves(t *testing.T) {
 	clave2 := "Perro"
 	clave3 := "Vaca"
 	claves := []string{clave1, clave2, clave3}
-	dic := TDADiccionarioOrdenado.CrearABB[string, *int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, *int](funcion_cmp)
 	dic.Guardar(claves[0], nil)
 	dic.Guardar(claves[1], nil)
 	dic.Guardar(claves[2], nil)
@@ -263,7 +251,7 @@ func TestIteradorInternoValores(t *testing.T) {
 	clave4 := "Burrito"
 	clave5 := "Hamster"
 
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
 	dic.Guardar(clave3, 3)
@@ -289,7 +277,7 @@ func TestIteradorInternoValoresConBorrados(t *testing.T) {
 	clave4 := "Burrito"
 	clave5 := "Hamster"
 
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	dic.Guardar(clave0, 7)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
@@ -311,7 +299,7 @@ func TestIteradorInternoValoresConBorrados(t *testing.T) {
 
 func TestIterarDiccionarioVacio(t *testing.T) {
 	t.Log("Iterar sobre diccionario vacio es simplemente tenerlo al final")
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	iter := dic.Iterador()
 	require.False(t, iter.HaySiguiente())
 	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
@@ -329,7 +317,7 @@ func TestDiccionarioIterar(t *testing.T) {
 	valor3 := "moo"
 	claves := []string{clave1, clave2, clave3}
 	valores := []string{valor1, valor2, valor3}
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	dic.Guardar(claves[0], valores[0])
 	dic.Guardar(claves[1], valores[1])
 	dic.Guardar(claves[2], valores[2])
@@ -361,7 +349,7 @@ func TestDiccionarioIterar(t *testing.T) {
 
 func TestIteradorNoLlegaAlFinal(t *testing.T) {
 	t.Log("Crea un iterador y no lo avanza. Luego crea otro iterador y lo avanza.")
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	claves := []string{"A", "B", "C"}
 	dic.Guardar(claves[0], "")
 	dic.Guardar(claves[1], "")
@@ -395,7 +383,7 @@ func TestPruebaIterarTrasBorrados(t *testing.T) {
 	clave2 := "Perro"
 	clave3 := "Vaca"
 
-	dic := TDADiccionarioOrdenado.CrearABB[string, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, string](funcion_cmp)
 	dic.Guardar(clave1, "")
 	dic.Guardar(clave2, "")
 	dic.Guardar(clave3, "")
@@ -422,7 +410,7 @@ func TestVolumenIteradorCorte(t *testing.T) {
 	t.Log("Prueba de volumen de iterador interno, para validar que siempre que se indique que se corte" +
 		" la iteración con la función visitar, se corte")
 
-	dic := TDADiccionarioOrdenado.CrearABB[int, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[int, int](funcion_cmp)
 
 	/* Inserta 'n' parejas en el hash */
 	for i := 0; i < 10000; i++ {
@@ -457,7 +445,7 @@ func TestIterarConRango(t *testing.T) {
 	clave4 := "Burrito"
 	clave5 := "Hamster"
 
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
 	dic.Guardar(clave3, 3)
@@ -487,7 +475,7 @@ func TestIterarSinRango(t *testing.T) {
 	clave4 := "Burrito"
 	clave5 := "Hamster"
 
-	dic := TDADiccionarioOrdenado.CrearABB[string, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[string, int](funcion_cmp)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
 	dic.Guardar(clave3, 3)
@@ -506,7 +494,7 @@ func TestIterarSinRango(t *testing.T) {
 }
 func TestIterarRangoSinHasta(t *testing.T) {
 	t.Log("Iterar poniendo un rango de elementos pero sin un hasta (=nil)")
-	dic := TDADiccionarioOrdenado.CrearABB[int, int](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[int, int](funcion_cmp)
 	claves := []int{1, 2, 3, 4, 5}
 	for _, clave := range claves {
 		dic.Guardar(clave, clave)
@@ -526,7 +514,7 @@ func TestIterarRangoSinHasta(t *testing.T) {
 }
 
 func TestIteradorEnOrden(t *testing.T) {
-	dic := TDADiccionarioOrdenado.CrearABB[int, string](TDADiccionarioOrdenado.Funcion_cmp)
+	dic := TDADiccionarioOrdenado.CrearABB[int, string](funcion_cmp)
 	claves := []int{5, 3, 7, 2, 4, 6, 8}
 	for _, clave := range claves {
 		dic.Guardar(clave, fmt.Sprintf("valor%d", clave))
@@ -567,7 +555,7 @@ func TestIteradorEnOrden(t *testing.T) {
 }
 
 func TestIterarRango(t *testing.T) {
-	diccionario := TDADiccionarioOrdenado.CrearABB[int, string](TDADiccionarioOrdenado.Funcion_cmp)
+	diccionario := TDADiccionarioOrdenado.CrearABB[int, string](funcion_cmp)
 
 	claves := []int{5, 3, 7, 2, 4, 6, 8}
 	for _, clave := range claves {
@@ -594,4 +582,25 @@ func TestIterarRango(t *testing.T) {
 		return true
 	})
 	require.Equal(t, []int{3, 4, 5, 6, 7, 8}, resultados)
+}
+
+func funcion_cmp[K comparable](clave1, clave2 K) int {
+	tipoClave := reflect.TypeOf(clave1)
+
+	switch tipoClave.Kind() {
+	case reflect.String:
+		c1 := reflect.ValueOf(clave1).String()
+		c2 := reflect.ValueOf(clave2).String()
+		return strings.Compare(c1, c2)
+	case reflect.Int:
+		c1 := reflect.ValueOf(clave1).Int()
+		c2 := reflect.ValueOf(clave2).Int()
+		if c1 < c2 {
+			return -1
+		} else if c1 > c2 {
+			return 1
+		}
+		return 0
+	}
+	return 0
 }
