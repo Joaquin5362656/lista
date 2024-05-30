@@ -1,6 +1,7 @@
 package cola_prioridad_test
 
 import (
+	"fmt"
 	TDAHeap "tdas/cola_prioridad"
 	"testing"
 
@@ -179,4 +180,68 @@ func TestHeapSortElementosIguales(t *testing.T) {
 	})
 
 	require.Equal(t, expected, arreglo)
+}
+
+func TestHeapStrings(t *testing.T) {
+	heap := TDAHeap.CrearHeap[string](func(a, b string) int {
+		return len(a) - len(b)
+	})
+
+	heap.Encolar("a")
+	heap.Encolar("abc")
+	heap.Encolar("ab")
+
+	require.False(t, heap.EstaVacia())
+	require.Equal(t, "abc", heap.VerMax())
+
+	require.Equal(t, "abc", heap.Desencolar())
+	require.Equal(t, "ab", heap.Desencolar())
+	require.Equal(t, "a", heap.Desencolar())
+	require.True(t, heap.EstaVacia())
+}
+
+func TestCantidadAlEncolarYDesencolar(t *testing.T) {
+	heap := TDAHeap.CrearHeap[int](func(a, b int) int {
+		return a - b
+	})
+
+	require.Equal(t, 0, heap.Cantidad())
+
+	heap.Encolar(1)
+	require.Equal(t, 1, heap.Cantidad())
+
+	heap.Encolar(2)
+	require.Equal(t, 2, heap.Cantidad())
+
+	heap.Desencolar()
+	require.Equal(t, 1, heap.Cantidad())
+
+	heap.Desencolar()
+	require.Equal(t, 0, heap.Cantidad())
+
+	require.PanicsWithValue(t, "La cola esta vacia", func() { heap.Desencolar() })
+}
+
+func BenchmarkHeap(b *testing.B) {
+	b.Log("Prueba de stress del Heap. Prueba guardando distinta cantidad de elementos, ejecutando muchas veces las pruebas para generar un benchmark. Valida que la cantidad sea la adecuada.")
+
+	for _, n := range []int{1000, 10000, 100000} {
+		b.Run(fmt.Sprintf("Prueba %d elementos", n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				heap := TDAHeap.CrearHeap[int](func(a, b int) int {
+					return a - b
+				})
+
+				for j := 0; j < n; j++ {
+					heap.Encolar(j)
+				}
+				require.Equal(b, n, heap.Cantidad())
+
+				for j := 0; j < n; j++ {
+					require.Equal(b, n-j-1, heap.Desencolar())
+				}
+				require.True(b, heap.EstaVacia())
+			}
+		})
+	}
 }

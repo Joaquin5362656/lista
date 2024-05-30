@@ -1,5 +1,10 @@
 package cola_prioridad
 
+const (
+	factorAchicar     = 4
+	factorRedimension = 2
+)
+
 type colaConPrioridad[T any] struct {
 	datos []T
 	cant  int
@@ -28,7 +33,7 @@ func CrearHeapArr[T any](arreglo []T, funcion_cmp func(T, T) int) ColaPrioridad[
 }
 
 func (cola *colaConPrioridad[T]) EstaVacia() bool {
-	return cola.cant == 0
+	return cola.Cantidad() == 0
 }
 
 func (cola *colaConPrioridad[T]) Cantidad() int {
@@ -36,9 +41,16 @@ func (cola *colaConPrioridad[T]) Cantidad() int {
 }
 
 func (cola *colaConPrioridad[T]) Encolar(elem T) {
-	cola.datos = append(cola.datos, elem)
+	if cola.cant >= len(cola.datos) {
+		if cola.cant == 0 {
+			cola.redimensionar(factorRedimension)
+		} else {
+			cola.redimensionar(factorRedimension * cola.cant)
+		}
+	}
+	cola.datos[cola.cant] = elem
 	cola.cant++
-	cola.upHeap(cola.cant - 1)
+	upHeap(cola.datos, cola.cant-1, cola.cmp)
 }
 
 func (cola *colaConPrioridad[T]) VerMax() T {
@@ -55,45 +67,14 @@ func (cola *colaConPrioridad[T]) Desencolar() T {
 	maxElem := cola.datos[0]
 	cola.datos[0] = cola.datos[cola.cant-1]
 	cola.cant--
-	cola.downHeap(0)
+	downHeap(cola.datos, cola.cant, 0, cola.cmp)
 	cola.datos = cola.datos[:cola.cant]
 
-	if 4*cola.cant <= len(cola.datos) && cola.cant > 0 {
-		cola.redimensionar()
+	if factorAchicar*cola.cant <= len(cola.datos) && cola.cant > 0 {
+		cola.redimensionar(cola.cant / factorRedimension)
 	}
 
 	return maxElem
-}
-
-func (cola *colaConPrioridad[T]) upHeap(pos int) {
-	for pos > 0 {
-		padre := (pos - 1) / 2
-		if cola.cmp(cola.datos[pos], cola.datos[padre]) <= 0 {
-			return
-		}
-		cola.datos[pos], cola.datos[padre] = cola.datos[padre], cola.datos[pos]
-		pos = padre
-	}
-}
-
-func (cola *colaConPrioridad[T]) downHeap(pos int) {
-	for {
-		hijoIzq := 2*pos + 1
-		hijoDer := 2*pos + 2
-		mayor := pos
-
-		if hijoIzq < cola.cant && cola.cmp(cola.datos[hijoIzq], cola.datos[mayor]) > 0 {
-			mayor = hijoIzq
-		}
-		if hijoDer < cola.cant && cola.cmp(cola.datos[hijoDer], cola.datos[mayor]) > 0 {
-			mayor = hijoDer
-		}
-		if mayor == pos {
-			return
-		}
-		cola.datos[pos], cola.datos[mayor] = cola.datos[mayor], cola.datos[pos]
-		pos = mayor
-	}
 }
 
 func (cola *colaConPrioridad[T]) heapify() {
@@ -128,16 +109,26 @@ func downHeap[T any](datos []T, n, pos int, cmp func(T, T) int) {
 			mayor = hijoDer
 		}
 		if mayor == pos {
-			return
+			break
 		}
 		datos[pos], datos[mayor] = datos[mayor], datos[pos]
 		pos = mayor
 	}
 }
 
-func (cola *colaConPrioridad[T]) redimensionar() {
-	nuevaCapacidad := len(cola.datos) / 2
-	nuevaCopia := make([]T, cola.cant, nuevaCapacidad)
-	copy(nuevaCopia, cola.datos[:cola.cant])
-	cola.datos = nuevaCopia
+func upHeap[T any](datos []T, pos int, cmp func(T, T) int) {
+	for pos > 0 {
+		padre := (pos - 1) / 2
+		if cmp(datos[pos], datos[padre]) <= 0 {
+			break
+		}
+		datos[pos], datos[padre] = datos[padre], datos[pos]
+		pos = padre
+	}
+}
+
+func (cola *colaConPrioridad[T]) redimensionar(nuevaCapacidad int) {
+	nuevosDatos := make([]T, nuevaCapacidad)
+	copy(nuevosDatos, cola.datos)
+	cola.datos = nuevosDatos
 }
