@@ -25,32 +25,27 @@ func crearNodoAbb[K comparable, V any](nuevoElemento parClaveValor[K, V]) *nodoA
 }
 
 func (arbol *abb[K, V]) Pertenece(clave K) bool {
-	ramaABuscar := arbol.raiz.buscarRama(clave, arbol.funcCmp)
+	ramaABuscar := buscarRama(clave, &arbol.raiz, arbol.funcCmp)
 	return ramaABuscar != nil && *ramaABuscar != nil
 }
 
 func (arbol *abb[K, V]) Guardar(clave K, dato V) {
 
-	if arbol.raiz == nil {
-		arbol.raiz = crearNodoAbb(parClaveValor[K, V]{clave, dato})
+	ramaEncontrada := buscarRama(clave, &arbol.raiz, arbol.funcCmp)
+
+	if *ramaEncontrada == nil {
+		*ramaEncontrada = crearNodoAbb(parClaveValor[K, V]{clave, dato})
 		arbol.cantidad++
 	} else {
-		ramaEncontrada := arbol.raiz.buscarRama(clave, arbol.funcCmp)
-
-		if *ramaEncontrada == nil {
-			*ramaEncontrada = crearNodoAbb(parClaveValor[K, V]{clave, dato})
-			arbol.cantidad++
-		} else {
-			nodoAModificar := *ramaEncontrada
-			nodoAModificar.nodoRaiz.dato = dato
-		}
-
+		nodoAModificar := *ramaEncontrada
+		nodoAModificar.nodoRaiz.dato = dato
 	}
+
 }
 
 func (arbol *abb[K, V]) Obtener(clave K) V {
 
-	ramaEncontrada := arbol.raiz.buscarRama(clave, arbol.funcCmp)
+	ramaEncontrada := buscarRama(clave, &arbol.raiz, arbol.funcCmp)
 
 	if ramaEncontrada == nil || *ramaEncontrada == nil {
 		panic("La clave no pertenece al diccionario")
@@ -60,34 +55,41 @@ func (arbol *abb[K, V]) Obtener(clave K) V {
 }
 
 func (arbol *abb[K, V]) Borrar(clave K) V {
-	ramaABorrar := arbol.raiz.buscarRama(clave, arbol.funcCmp)
+
+	ramaABorrar := buscarRama(clave, &arbol.raiz, arbol.funcCmp)
 
 	if ramaABorrar == nil || *ramaABorrar == nil {
 		panic("La clave no pertenece al diccionario")
 	}
 
-	if *ramaABorrar == arbol.raiz {
-		ramaABorrar = &arbol.raiz
-	}
-
 	datoBorrado := (*ramaABorrar).nodoRaiz.dato
 
 	if (*ramaABorrar).derecho != nil && (*ramaABorrar).izquierdo != nil {
-		nodoAModificar := (*ramaABorrar)
-		ramaDerecha := &(*ramaABorrar).derecho
-		ramaABorrar = buscarRamaSucesorInmediato((*ramaABorrar).derecho)
-		if *ramaABorrar == *ramaDerecha {
-			ramaABorrar = ramaDerecha
-		}
-		nodoAModificar.nodoRaiz.clave = (*ramaABorrar).nodoRaiz.clave
-		nodoAModificar.nodoRaiz.dato = (*ramaABorrar).nodoRaiz.dato
+		borrarCon2Hijos(ramaABorrar)
+	} else {
+		borrarConMenosDe2Hijos(ramaABorrar)
 	}
-
-	(*ramaABorrar) = hallarHijoNoNulo((*ramaABorrar).izquierdo, (*ramaABorrar).derecho)
 
 	arbol.cantidad--
 
 	return datoBorrado
+}
+
+func borrarCon2Hijos[K comparable, V any](ramaAModificar **nodoAbb[K, V]) {
+
+	nodoAModificar := *ramaAModificar
+
+	ramaAModificar = buscarRamaSucesorInmediato(&(*ramaAModificar).derecho)
+
+	nodoAModificar.nodoRaiz.clave = (*ramaAModificar).nodoRaiz.clave
+	nodoAModificar.nodoRaiz.dato = (*ramaAModificar).nodoRaiz.dato
+
+	borrarConMenosDe2Hijos(ramaAModificar)
+
+}
+
+func borrarConMenosDe2Hijos[K comparable, V any](ramaAModificar **nodoAbb[K, V]) {
+	(*ramaAModificar) = (*ramaAModificar).hallarHijoNoNulo()
 }
 
 func (arbol *abb[K, V]) Cantidad() int {
@@ -96,21 +98,8 @@ func (arbol *abb[K, V]) Cantidad() int {
 
 func (arbol *abb[K, V]) Iterar(funcion func(clave K, dato V) bool) {
 	if arbol.raiz != nil {
-		arbol.raiz.iterarRec(funcion)
+		arbol.raiz.iterarRangoRec(nil, nil, funcion, arbol.funcCmp)
 	}
-}
-
-func (nodoArbol *nodoAbb[K, V]) iterarRec(funcion func(clave K, dato V) bool) bool {
-	if nodoArbol == nil {
-		return true
-	}
-	if !nodoArbol.izquierdo.iterarRec(funcion) {
-		return false
-	}
-	if !funcion(nodoArbol.nodoRaiz.clave, nodoArbol.nodoRaiz.dato) {
-		return false
-	}
-	return nodoArbol.derecho.iterarRec(funcion)
 }
 
 func (arbol *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
@@ -142,50 +131,40 @@ func (nodoArbol *nodoAbb[K, V]) iterarRangoRec(desde *K, hasta *K, visitar func(
 	return true
 }
 
-func buscarRamaSucesorInmediato[K comparable, V any](raiz *nodoAbb[K, V]) **nodoAbb[K, V] {
+func buscarRamaSucesorInmediato[K comparable, V any](ramaOrigen **nodoAbb[K, V]) **nodoAbb[K, V] {
+
+	raiz := *ramaOrigen
 
 	if raiz.izquierdo == nil {
-		return &raiz
+		return ramaOrigen
 	}
 
-	sucesorInmediato := buscarRamaSucesorInmediato(raiz.izquierdo)
-
-	if *sucesorInmediato == raiz.izquierdo {
-		return &raiz.izquierdo
-	}
+	sucesorInmediato := buscarRamaSucesorInmediato(&raiz.izquierdo)
 
 	return sucesorInmediato
 }
 
-func hallarHijoNoNulo[K comparable, V any](izquierdo *nodoAbb[K, V], derecho *nodoAbb[K, V]) *nodoAbb[K, V] {
-	if izquierdo == nil {
-		return derecho
+func (padre *nodoAbb[K, V]) hallarHijoNoNulo() *nodoAbb[K, V] {
+	if padre.izquierdo == nil {
+		return padre.derecho
 	}
-	return izquierdo
+	return padre.izquierdo
 }
 
-func (rama *nodoAbb[K, V]) buscarRama(clave K, comparar func(K, K) int) **nodoAbb[K, V] {
+func buscarRama[K comparable, V any](clave K, ramaOrigen **nodoAbb[K, V], comparar func(K, K) int) **nodoAbb[K, V] {
 
-	if rama == nil {
-		return &rama
-	}
+	actual := *ramaOrigen
 
-	if rama.nodoRaiz.clave == clave {
-		return &rama
+	if actual == nil || actual.nodoRaiz.clave == clave {
+		return ramaOrigen
 	}
 
 	var ramaEncontrada **nodoAbb[K, V]
 
-	if comparar(clave, rama.nodoRaiz.clave) < 0 {
-		ramaEncontrada = rama.izquierdo.buscarRama(clave, comparar)
-		if ramaEncontrada == nil || *ramaEncontrada == rama.izquierdo {
-			ramaEncontrada = &rama.izquierdo
-		}
+	if comparar(clave, actual.nodoRaiz.clave) < 0 {
+		ramaEncontrada = buscarRama(clave, &actual.izquierdo, comparar)
 	} else {
-		ramaEncontrada = rama.derecho.buscarRama(clave, comparar)
-		if ramaEncontrada == nil || *ramaEncontrada == rama.derecho {
-			ramaEncontrada = &rama.derecho
-		}
+		ramaEncontrada = buscarRama(clave, &actual.derecho, comparar)
 	}
 
 	return ramaEncontrada
